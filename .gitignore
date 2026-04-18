@@ -1,0 +1,4 @@
+# belayer — per-run state (committed: agents/, config.yaml, policies/)
+/.belayer/runs/
+/.belayer/worktrees/
+/.belayer/hermes_bridge/

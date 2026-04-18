@@ -1,0 +1,16 @@
+# .belayer/policies/standard.yaml — placeholder clamshell policy.
+# 'belayer init' writes this so the policies/ directory has a starting point.
+# Replace with a real policy when you switch sandbox.mode to 'clamshell'.
+#
+# See docs/design-docs/ for the full policy schema.
+version: 5
+sandbox:
+  user: sandbox
+  group: sandbox
+  work_dir: /workspace
+process:
+  no_new_privileges: true
+  drop_capabilities: ['ALL']
+  read_only_rootfs: true
+network:
+  mode: proxy
