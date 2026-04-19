@@ -1,0 +1,11 @@
+{
+  "name": "arielcharts",
+  "private": true,
+  "version": "0.0.1",
+  "scripts": {
+    "dev": "pnpm --parallel -r dev",
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck"
+  },
+  "engines": { "node": ">=20", "pnpm": ">=9" }
+}
