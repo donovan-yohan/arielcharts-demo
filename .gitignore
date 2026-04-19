@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.next/
+*.db
+*.db-journal
+.pnpm-store/
+.npmrc
+*.db
+*.db-journal
