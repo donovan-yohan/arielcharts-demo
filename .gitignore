@@ -1,0 +1,16 @@
+node_modules
+.pnpm-store
+.next
+coverage
+dist
+*.tsbuildinfo
+*.db
+*.db.json
+*.db-shm
+*.db-wal
+apps/server/.data/
+.env
+.env.local
+/.belayer/runs/
+/.belayer/worktrees/
+/.belayer/hermes_bridge/

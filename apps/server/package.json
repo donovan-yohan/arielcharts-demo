@@ -1,0 +1,31 @@
+{
+  "name": "@arielcharts/server",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsx watch src/index.ts",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@arielcharts/shared": "workspace:*",
+    "@modelcontextprotocol/sdk": "^1.18.1",
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "lib0": "^0.2.114",
+    "nanoid": "^5.1.6",
+    "ws": "^8.18.3",
+    "y-protocols": "^1.0.6",
+    "yjs": "^13.6.27",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.3",
+    "@types/ws": "^8.18.1",
+    "tsx": "^4.20.6",
+    "vitest": "^3.2.4"
+  }
+}
