@@ -1,0 +1,734 @@
+/* ============================================================
+   ArielCharts — Global CSS
+   Design tokens + utility classes
+   ============================================================ */
+
+/* Reset */
+*,
+*::before,
+*::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* ── Design Tokens ─────────────────────────────────────────── */
+:root {
+  /* Backgrounds */
+  --bg-deep:    #0d1117;
+  --bg-raised:  #161b22;
+  --bg-border:  #30363d;
+
+  /* Text */
+  --text-primary:   #e2e8f0;
+  --text-secondary: #8b949e;
+  --text-code:      #c9d1d9;
+
+  /* Accent */
+  --accent: #38bdf8;
+
+  /* Status */
+  --green-agent: #3fb950;
+  --green-share: #238636;
+  --blue-logo:   #58a6ff;
+}
+
+/* ── Base ──────────────────────────────────────────────────── */
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  background: var(--bg-deep);
+  color: var(--text-primary);
+  font-size: 13px;
+  -webkit-font-smoothing: antialiased;
+}
+
+#__next,
+main {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Scrollbar ─────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--bg-border);
+  border-radius: 3px;
+}
+
+/* ── Topbar ────────────────────────────────────────────────── */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  background: var(--bg-raised);
+  border-bottom: 1px solid var(--bg-border);
+  height: 48px;
+  flex: none;
+  z-index: 100;
+}
+
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logo {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--blue-logo);
+  white-space: nowrap;
+  user-select: none;
+}
+
+/* connect my agent button */
+.connect-btn {
+  flex: none;
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  background: linear-gradient(135deg, #38bdf8, #818cf8);
+  color: #f0f6fc;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-family: inherit;
+  cursor: pointer;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+}
+.connect-btn:hover {
+  opacity: 0.85;
+}
+
+/* session chip */
+.session-chip {
+  background: var(--bg-deep);
+  border: 1px solid var(--bg-border);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.session-chip .session-id {
+  color: var(--text-code);
+}
+.copy-btn {
+  background: none;
+  border: 1px solid var(--bg-border);
+  color: var(--text-secondary);
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.copy-btn:hover {
+  background: var(--bg-border);
+  color: var(--text-primary);
+}
+
+/* presence avatars */
+.presence {
+  display: flex;
+  align-items: center;
+}
+.avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  font-weight: 700;
+  margin-left: -6px;
+  cursor: default;
+  position: relative;
+  background: var(--bg-border);
+  color: var(--text-primary);
+}
+.avatar:first-child {
+  margin-left: 0;
+}
+.avatar--human {
+  border: 2px solid; /* color set inline */
+}
+.avatar--agent {
+  background: var(--bg-deep);
+  border: 2px dashed var(--green-agent);
+  color: var(--green-agent);
+}
+.avatar--own {
+  cursor: pointer;
+}
+.avatar--own:hover {
+  opacity: 0.85;
+}
+
+/* share button */
+.share-btn {
+  flex: none;
+  border: 1px solid #2f6f3e;
+  background: var(--green-share);
+  color: #f0f6fc;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 11px;
+  cursor: pointer;
+  font-family: inherit;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+}
+.share-btn:hover {
+  opacity: 0.85;
+}
+
+/* ── Name Popover ──────────────────────────────────────────── */
+.name-popover {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: var(--bg-raised);
+  border: 1px solid var(--bg-border);
+  border-radius: 8px;
+  padding: 12px;
+  width: 200px;
+  z-index: 200;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+}
+.name-popover label {
+  display: block;
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+.name-popover input {
+  width: 100%;
+  background: var(--bg-deep);
+  border: 1px solid var(--bg-border);
+  border-radius: 4px;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 12px;
+  padding: 4px 8px;
+  outline: none;
+}
+.name-popover input:focus {
+  border-color: var(--accent);
+}
+.name-popover-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 8px;
+  gap: 6px;
+}
+.name-popover-actions button {
+  background: var(--accent);
+  border: none;
+  border-radius: 4px;
+  color: var(--bg-deep);
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  cursor: pointer;
+}
+
+/* ── Main Layout ───────────────────────────────────────────── */
+.workspace {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.main-content {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* ── Editor Pane ───────────────────────────────────────────── */
+.editor-pane {
+  width: 40%;
+  border-right: 1px solid var(--bg-border);
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* ── Diagram Pane ──────────────────────────────────────────── */
+.diagram-pane {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* ── Pane Header ───────────────────────────────────────────── */
+.pane-header {
+  padding: 6px 12px;
+  background: var(--bg-raised);
+  border-bottom: 1px solid var(--bg-border);
+  font-size: 11px;
+  color: var(--text-secondary);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex: none;
+}
+.pane-header .pane-title {
+  font-weight: 600;
+  color: var(--text-code);
+}
+.pane-header .pane-status {
+  color: var(--text-secondary);
+  font-size: 10px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--green-agent);
+}
+
+/* ── CodeMirror Wrapper ────────────────────────────────────── */
+.codemirror-wrap {
+  flex: 1;
+  overflow: hidden;
+  min-height: 0;
+}
+.codemirror-wrap .cm-editor {
+  height: 100%;
+  background: var(--bg-deep);
+  color: var(--text-code);
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  font-size: 13px;
+}
+.codemirror-wrap .cm-gutters {
+  background: var(--bg-deep);
+  border-right: 1px solid var(--bg-border);
+  color: #484f58;
+}
+.codemirror-wrap .cm-scroller {
+  font-family: inherit;
+}
+.codemirror-wrap .cm-focused {
+  outline: none;
+}
+.codemirror-wrap .cm-selectionBackground {
+  background: rgba(56, 189, 248, 0.2) !important;
+}
+.codemirror-wrap .cm-line {
+  padding: 0 12px;
+}
+
+/* ── Diagram Canvas ────────────────────────────────────────── */
+.diagram-canvas-outer {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  background: var(--bg-deep);
+  min-height: 0;
+}
+
+/* ── Error Banner ──────────────────────────────────────────── */
+.error-banner {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  background: rgba(218, 54, 51, 0.15);
+  border-bottom: 1px solid rgba(218, 54, 51, 0.4);
+  color: #ff7b72;
+  font-size: 11px;
+  padding: 6px 12px;
+}
+
+/* ── Activity Feed ─────────────────────────────────────────── */
+.activity-pane {
+  flex: none;
+  border-top: 1px solid var(--bg-border);
+  background: var(--bg-raised);
+}
+.activity-header {
+  padding: 4px 12px;
+  border-bottom: 1px solid var(--bg-border);
+  font-size: 11px;
+  color: var(--text-secondary);
+  display: flex;
+  justify-content: space-between;
+}
+.activity-content {
+  padding: 4px 12px;
+  max-height: 120px;
+  overflow-y: auto;
+}
+.activity-item {
+  font-size: 11px;
+  padding: 3px 0;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.activity-time {
+  color: #484f58;
+  min-width: 45px;
+  flex-shrink: 0;
+}
+.activity-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.activity-text {
+  color: var(--text-secondary);
+}
+.activity-text strong {
+  color: var(--text-code);
+  font-weight: 600;
+}
+.agent-badge {
+  background: #1a3a2a;
+  color: var(--green-agent);
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-size: 10px;
+  border: 1px solid #238636;
+}
+
+/* ── Connect Agent Modal ───────────────────────────────────── */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.55);
+}
+.modal-dialog {
+  width: min(480px, calc(100vw - 2rem));
+  background: var(--bg-raised);
+  border: 1px solid var(--bg-border);
+  border-radius: 12px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4);
+  display: flex;
+  flex-direction: column;
+}
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--bg-border);
+}
+.modal-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.modal-close {
+  width: 24px;
+  height: 24px;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.modal-close:hover {
+  background: var(--bg-border);
+  color: var(--text-primary);
+}
+.modal-body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.modal-body p {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+.prompt-block {
+  position: relative;
+  background: var(--bg-deep);
+  border: 1px solid var(--bg-border);
+  border-radius: 8px;
+  padding: 12px;
+}
+.prompt-block pre {
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  font-size: 11px;
+  color: var(--text-code);
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.6;
+}
+.prompt-copy-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: var(--bg-raised);
+  border: 1px solid var(--bg-border);
+  border-radius: 4px;
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: 10px;
+  padding: 3px 8px;
+  cursor: pointer;
+}
+.prompt-copy-btn:hover {
+  background: var(--bg-border);
+  color: var(--text-primary);
+}
+.modal-footer {
+  padding: 12px 20px;
+  border-top: 1px solid var(--bg-border);
+  display: flex;
+  justify-content: flex-end;
+}
+.modal-footer button {
+  background: var(--bg-border);
+  border: none;
+  border-radius: 6px;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 12px;
+  padding: 6px 16px;
+  cursor: pointer;
+}
+.modal-footer button:hover {
+  background: #484f58;
+}
+
+/* ── Toolbar (diagram canvas) ──────────────────────────────── */
+.ctx-toolbar {
+  position: absolute;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--bg-raised);
+  border: 1px solid var(--bg-border);
+  border-radius: 8px;
+  padding: 4px 6px;
+  box-shadow: 0 12px 32px rgba(2, 6, 23, 0.45);
+  z-index: 30;
+  pointer-events: all;
+}
+.ctx-btn {
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.ctx-btn:hover {
+  background: var(--bg-border);
+  color: var(--text-primary);
+}
+.ctx-btn--danger:hover {
+  background: rgba(218, 54, 51, 0.2);
+  color: #ff7b72;
+}
+
+/* ── Shape Picker ──────────────────────────────────────────── */
+.shape-picker {
+  position: absolute;
+  background: var(--bg-raised);
+  border: 1px solid var(--bg-border);
+  border-radius: 8px;
+  padding: 8px;
+  z-index: 35;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+}
+.shape-btn {
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: 11px;
+  padding: 4px 8px;
+  cursor: pointer;
+  text-align: left;
+  white-space: nowrap;
+}
+.shape-btn:hover {
+  background: var(--bg-border);
+  color: var(--text-primary);
+}
+.shape-btn--active {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* ── Inline Editor ─────────────────────────────────────────── */
+.node-inline-input {
+  position: absolute;
+  background: var(--bg-deep);
+  border: none;
+  border-bottom: 2px solid var(--accent);
+  border-radius: 0;
+  color: var(--text-code);
+  font-family: inherit;
+  font-size: 12px;
+  padding: 2px 6px;
+  outline: none;
+  z-index: 40;
+  min-width: 60px;
+}
+
+/* ── Zoom Controls ─────────────────────────────────────────── */
+.zoom-controls {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--bg-raised);
+  border: 1px solid var(--bg-border);
+  border-radius: 8px;
+  padding: 4px 6px;
+  z-index: 20;
+}
+.zoom-btn {
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.zoom-btn:hover {
+  background: var(--bg-border);
+  color: var(--text-primary);
+}
+.zoom-pct {
+  font-size: 11px;
+  color: var(--text-secondary);
+  min-width: 44px;
+  text-align: center;
+  font-family: inherit;
+  background: none;
+  border: none;
+  cursor: default;
+}
+
+/* ── Mode Hint ─────────────────────────────────────────────── */
+.mode-hint {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-raised);
+  border: 1px solid var(--bg-border);
+  border-radius: 16px;
+  padding: 4px 12px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  z-index: 20;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* ── Node Overlay ──────────────────────────────────────────── */
+.node-overlay {
+  position: absolute;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: box-shadow 0.1s;
+}
+.node-overlay--selected {
+  border: 2px solid var(--accent);
+  box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.2);
+}
+.node-overlay--connect-source {
+  border: 2px solid var(--accent);
+}
+
+/* ── Connection Port ───────────────────────────────────────── */
+.connect-port {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  background: var(--accent);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  cursor: crosshair;
+  z-index: 35;
+}
+
+/* ── Empty State ───────────────────────────────────────────── */
+.empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  width: 100%;
+}
+.empty-state-btn {
+  background: var(--accent);
+  border: none;
+  border-radius: 8px;
+  color: var(--bg-deep);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 10px 20px;
+  cursor: pointer;
+}
+.empty-state-btn:hover {
+  opacity: 0.85;
+}
+
+/* Focus ring for keyboard nav */
+.node-overlay:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}

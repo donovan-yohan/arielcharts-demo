@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+.pnpm-home/
+.npm-cache/
+
+# Build outputs
+dist/
+.next/
+out/
+
+# Database
+*.db
+*.db-shm
+*.db-wal
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# OS
+.DS_Store
+
+# Locks (managed by pnpm at root)
+package-lock.json
+
+# Belayer
+.belayer/runs/
+.belayer/worktrees/
+
+# TypeScript
+*.tsbuildinfo
+
+# Temp
+typecheck-env/

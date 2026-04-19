@@ -1,0 +1,29 @@
+{
+  "name": "@arielcharts/server",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "dev": "ts-node src/index.ts",
+    "build": "tsc"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1",
+    "better-sqlite3": "^9.6.0",
+    "cors": "^2",
+    "express": "^4",
+    "ts-node": "^10",
+    "typescript": "^5",
+    "uuid": "^9",
+    "ws": "^8",
+    "y-websocket": "^2",
+    "yjs": "^13"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7",
+    "@types/cors": "^2",
+    "@types/express": "^4",
+    "@types/node": "^20",
+    "@types/uuid": "^9",
+    "@types/ws": "^8"
+  }
+}
