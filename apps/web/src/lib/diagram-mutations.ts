@@ -2,6 +2,7 @@ import diff from 'fast-diff';
 import * as Y from 'yjs';
 
 export type NodeShape = 'rect' | 'round' | 'stadium' | 'subroutine' | 'diamond' | 'circle';
+export type EdgeArrowType = '-->' | '-.->' | '==>';
 
 export interface ParsedNode {
   id: string;
@@ -13,6 +14,7 @@ export interface ParsedEdge {
   from: string;
   to: string;
   label?: string;
+  arrowType?: EdgeArrowType;
 }
 
 export interface ParsedDiagram {
@@ -31,7 +33,10 @@ const shapeTokens: Record<NodeShape, { open: string; close: string }> = {
   circle: { open: '((', close: '))' },
 };
 
-const nodePattern = /([A-Za-z][A-Za-z0-9_]*)\s*(\(\(|\(\[|\[\[|\[|\(|\{)([^\n\]\)\}]+?)(\)\)|\]\)|\]\]|\]|\)|\})/g;
+const supportedArrowTypes: EdgeArrowType[] = ['-->', '-.->', '==>'];
+const identifierPattern = /[A-Za-z][A-Za-z0-9_]*/;
+const nodePattern = /(^|[^A-Za-z0-9_])([A-Za-z][A-Za-z0-9_]*)\s*(\(\(|\(\[|\[\[|\[|\(|\{)([^\n\]\)\}]+?)(\)\)|\]\)|\]\]|\]|\)|\})/g;
+
 export function parseDiagram(source: string): ParsedDiagram {
   const trimmed = source.trim();
   if (!trimmed) {
@@ -44,27 +49,25 @@ export function parseDiagram(source: string): ParsedDiagram {
   }
 
   const nodes = new Map<string, ParsedNode>();
-  for (const match of source.matchAll(nodePattern)) {
-    const [, id, open, rawLabel, close] = match;
-    nodes.set(id, {
-      id,
-      label: rawLabel.trim(),
-      shape: tokenToShape(open, close),
-    });
+  for (const line of source.split('\n')) {
+    if (isCommentLine(line)) continue;
+    for (const match of line.matchAll(nodePattern)) {
+      const [, prefix, id, open, rawLabel, close] = match;
+      if (prefix.includes('%')) continue;
+      nodes.set(id, {
+        id,
+        label: rawLabel.trim(),
+        shape: tokenToShape(open, close),
+      });
+    }
   }
 
   const edges: ParsedEdge[] = [];
   for (const line of source.split('\n')) {
-    const arrowIndex = line.indexOf('-->');
-    if (arrowIndex === -1) continue;
-    const left = line.slice(0, arrowIndex).trim();
-    const right = line.slice(arrowIndex + 3).trim();
-    const from = line.match(/^\s*([A-Za-z][A-Za-z0-9_]*)/)?.[1];
-    const targetPart = right.startsWith('|') ? right.slice(right.indexOf('|', 1) + 1).trim() : right;
-    const to = targetPart.match(/([A-Za-z][A-Za-z0-9_]*)/g)?.[0];
-    const labelMatch = right.match(/^\|([^|]+)\|/);
-    if (from && to) {
-      edges.push({ from, to, label: labelMatch?.[1]?.trim() });
+    if (isCommentLine(line)) continue;
+    const edgeMatch = parseEdgeLine(line);
+    if (edgeMatch) {
+      edges.push(edgeMatch);
     }
   }
 
@@ -85,25 +88,31 @@ function tokenToShape(open: string, close: string): NodeShape {
   return 'rect';
 }
 
-function renderNode(node: ParsedNode) {
-  const shape = shapeTokens[node.shape];
-  return `${node.id}${shape.open}${node.label}${shape.close}`;
+function isCommentLine(line: string) {
+  return line.trimStart().startsWith('%%');
 }
 
-function serialize(parsed: ParsedDiagram) {
-  if (parsed.kind !== 'flowchart') {
-    return '';
-  }
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
 
-  const lines = [`flowchart ${parsed.direction ?? 'TD'}`];
-  for (const node of parsed.nodes) {
-    lines.push(`    ${renderNode(node)}`);
-  }
-  for (const edge of parsed.edges) {
-    const label = edge.label ? `|${edge.label}|` : '';
-    lines.push(`    ${edge.from} -->${label} ${edge.to}`);
-  }
-  return lines.join('\n');
+function replaceNodeDefinitions(source: string, nodeId: string, transform: (node: ParsedNode) => ParsedNode): string {
+  const matcher = new RegExp(`(^|[^A-Za-z0-9_])(${escapeRegExp(nodeId)})\\s*(\\(\\(|\\(\\[|\\[\\[|\\[|\\(|\\{)([^\\n\\]\\)\\}]+?)(\\)\\)|\\]\\)|\\]\\]|\\]|\\)|\\})`, 'g');
+
+  return source
+    .split('\n')
+    .map((line) => {
+      if (isCommentLine(line)) {
+        return line;
+      }
+
+      return line.replace(matcher, (_match, prefix: string, id: string, open: string, rawLabel: string, close: string) => {
+        const next = transform({ id, label: rawLabel.trim(), shape: tokenToShape(open, close) });
+        const shape = shapeTokens[next.shape];
+        return `${prefix}${id}${shape.open}${next.label}${shape.close}`;
+      });
+    })
+    .join('\n');
 }
 
 function nextNodeId(parsed: ParsedDiagram) {
@@ -114,6 +123,117 @@ function nextNodeId(parsed: ParsedDiagram) {
     }
   }
   return `node_${parsed.nodes.length + 1}`;
+}
+
+function inferIndentation(lines: string[]) {
+  for (const line of lines) {
+    if (!line.trim() || isCommentLine(line)) continue;
+    const indent = line.match(/^\s*/)?.[0] ?? '';
+    if (line.trim().startsWith('flowchart')) continue;
+    return indent || '    ';
+  }
+  return '    ';
+}
+
+function findInsertionIndex(lines: string[], anchorPattern?: RegExp) {
+  if (anchorPattern) {
+    for (let index = lines.length - 1; index >= 0; index -= 1) {
+      if (anchorPattern.test(lines[index])) {
+        return index + 1;
+      }
+    }
+  }
+
+  let lastContentIndex = lines.length;
+  while (lastContentIndex > 0 && !lines[lastContentIndex - 1].trim()) {
+    lastContentIndex -= 1;
+  }
+  return lastContentIndex;
+}
+
+function insertLines(source: string, newLines: string[], anchorPattern?: RegExp) {
+  const lines = source.split('\n');
+  const index = findInsertionIndex(lines, anchorPattern);
+  lines.splice(index, 0, ...newLines);
+  return lines.join('\n');
+}
+
+function parseEdgeLine(line: string): ParsedEdge | null {
+  const arrowType = supportedArrowTypes.find((candidate) => line.includes(candidate));
+  if (!arrowType) {
+    return null;
+  }
+
+  const arrowIndex = line.indexOf(arrowType);
+  const from = line.slice(0, arrowIndex).match(identifierPattern)?.[0];
+  if (!from) {
+    return null;
+  }
+
+  const right = line.slice(arrowIndex + arrowType.length).trim();
+  const labelMatch = right.match(/^\|([^|]+)\|/);
+  const targetPart = labelMatch ? right.slice(labelMatch[0].length).trim() : right;
+  const to = targetPart.match(identifierPattern)?.[0];
+  if (!to) {
+    return null;
+  }
+
+  return { from, to, label: labelMatch?.[1]?.trim(), arrowType };
+}
+
+function edgeExists(source: string, from: string, to: string, arrowType?: EdgeArrowType, label?: string) {
+  const parsed = parseDiagram(source);
+  return parsed.edges.some(
+    (edge) =>
+      edge.from === from &&
+      edge.to === to &&
+      (arrowType ? edge.arrowType === arrowType : true) &&
+      (label !== undefined ? (edge.label ?? '') === label : true),
+  );
+}
+
+function removeEdgeLine(source: string, predicate: (edge: ParsedEdge) => boolean) {
+  return source
+    .split('\n')
+    .filter((line) => {
+      if (isCommentLine(line)) return true;
+      const edge = parseEdgeLine(line);
+      if (!edge) return true;
+      return !predicate(edge);
+    })
+    .join('\n');
+}
+
+function removeNodeRelatedLines(source: string, nodeIds: string[]) {
+  const nodeIdSet = new Set(nodeIds);
+  return source
+    .split('\n')
+    .filter((line) => {
+      if (isCommentLine(line)) return true;
+      const trimmed = line.trim();
+      if (!trimmed) return true;
+
+      const edge = parseEdgeLine(line);
+      if (edge && (nodeIdSet.has(edge.from) || nodeIdSet.has(edge.to))) {
+        return false;
+      }
+
+      const nodeId = trimmed.match(/^([A-Za-z][A-Za-z0-9_]*)\s*(\(\(|\(\[|\[\[|\[|\(|\{)/)?.[1];
+      if (nodeId && nodeIdSet.has(nodeId)) {
+        return false;
+      }
+
+      return true;
+    })
+    .join('\n');
+}
+
+function normalizeFlowchartSource(source: string) {
+  const parsed = parseDiagram(source);
+  if (parsed.kind === 'empty') {
+    return 'flowchart TD';
+  }
+  return parsed.kind === 'flowchart' ? source : null;
 }
 
 export class MutationQueue {
@@ -135,57 +255,118 @@ export class MutationQueue {
   }
 
   editNodeLabel(nodeId: string, label: string) {
-    return this.enqueue((current) => {
-      const parsed = parseDiagram(current);
-      if (parsed.kind !== 'flowchart') return current;
-      parsed.nodes = parsed.nodes.map((node) => (node.id === nodeId ? { ...node, label } : node));
-      return serialize(parsed);
-    });
+    return this.enqueue((current) => replaceNodeDefinitions(current, nodeId, (node) => ({ ...node, label })));
   }
 
   changeNodeShape(nodeId: string, shape: NodeShape) {
-    return this.enqueue((current) => {
-      const parsed = parseDiagram(current);
-      if (parsed.kind !== 'flowchart') return current;
-      parsed.nodes = parsed.nodes.map((node) => (node.id === nodeId ? { ...node, shape } : node));
-      return serialize(parsed);
-    });
+    return this.enqueue((current) => replaceNodeDefinitions(current, nodeId, (node) => ({ ...node, shape })));
   }
 
   addNode(afterNodeId?: string) {
     return this.enqueue((current) => {
-      const parsed = parseDiagram(current);
-      if (parsed.kind === 'empty') {
-        return 'flowchart TD\n    a[First node]';
+      const normalized = normalizeFlowchartSource(current);
+      if (normalized === null) return current;
+      if (normalized === 'flowchart TD') {
+        return `${normalized}\n    a[First node]`;
       }
+
+      const parsed = parseDiagram(normalized);
       if (parsed.kind !== 'flowchart') return current;
       const id = nextNodeId(parsed);
-      parsed.nodes.push({ id, label: 'New step', shape: 'rect' });
+      const lines = normalized.split('\n');
+      const indent = inferIndentation(lines);
+      const additions = [`${indent}${id}[New step]`];
       if (afterNodeId) {
-        parsed.edges.push({ from: afterNodeId, to: id });
+        additions.push(`${indent}${afterNodeId} --> ${id}`);
       }
-      return serialize(parsed);
+      return insertLines(normalized, additions, afterNodeId ? new RegExp(`\\b${escapeRegExp(afterNodeId)}\\b`) : /^flowchart\b/);
     });
   }
 
   removeNodes(nodeIds: string[]) {
+    return this.enqueue((current) => removeNodeRelatedLines(current, nodeIds));
+  }
+
+  addEdge(from: string, to: string, label?: string, arrowType: EdgeArrowType = '-->') {
     return this.enqueue((current) => {
-      const parsed = parseDiagram(current);
-      if (parsed.kind !== 'flowchart') return current;
-      parsed.nodes = parsed.nodes.filter((node) => !nodeIds.includes(node.id));
-      parsed.edges = parsed.edges.filter((edge) => !nodeIds.includes(edge.from) && !nodeIds.includes(edge.to));
-      return serialize(parsed);
+      const normalized = normalizeFlowchartSource(current);
+      if (normalized === null) return current;
+      if (edgeExists(normalized, from, to, arrowType, label)) {
+        return normalized;
+      }
+      const indent = inferIndentation(normalized.split('\n'));
+      const edgeLabel = label?.trim() ? `|${label.trim()}| ` : '';
+      return insertLines(normalized, [`${indent}${from} ${arrowType} ${edgeLabel}${to}`], new RegExp(`\\b${escapeRegExp(from)}\\b|\\b${escapeRegExp(to)}\\b`));
     });
   }
 
-  addEdge(from: string, to: string) {
+  removeEdge(from: string, to: string) {
+    return this.enqueue((current) => removeEdgeLine(current, (edge) => edge.from === from && edge.to === to));
+  }
+
+  groupNodes(nodeIds: string[], label: string) {
     return this.enqueue((current) => {
-      const parsed = parseDiagram(current);
-      if (parsed.kind !== 'flowchart') return current;
-      if (!parsed.edges.find((edge) => edge.from === from && edge.to === to)) {
-        parsed.edges.push({ from, to });
+      const normalized = normalizeFlowchartSource(current);
+      if (normalized === null || nodeIds.length === 0) return current;
+      const lines = normalized.split('\n');
+      const indexes = lines
+        .map((line, index) => ({ line, index }))
+        .filter(({ line }) => {
+          const nodeId = line.trim().match(/^([A-Za-z][A-Za-z0-9_]*)\s*(\(\(|\(\[|\[\[|\[|\(|\{)/)?.[1];
+          return nodeId ? nodeIds.includes(nodeId) : false;
+        })
+        .map(({ index }) => index);
+
+      if (indexes.length === 0) return current;
+      const start = Math.min(...indexes);
+      const end = Math.max(...indexes);
+      const indent = lines[start].match(/^\s*/)?.[0] ?? '    ';
+      const innerIndent = `${indent}  `;
+      const subgraphId = label.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '') || 'group';
+      const block = [
+        `${indent}subgraph ${subgraphId}[${label}]`,
+        ...lines.slice(start, end + 1).map((line) => `${innerIndent}${line.trimStart()}`),
+        `${indent}end`,
+      ];
+      lines.splice(start, end - start + 1, ...block);
+      return lines.join('\n');
+    });
+  }
+
+  ungroupSubgraph(subgraphId: string) {
+    return this.enqueue((current) => {
+      const normalized = normalizeFlowchartSource(current);
+      if (normalized === null) return current;
+      const lines = normalized.split('\n');
+      const start = lines.findIndex((line) => new RegExp(`^\\s*subgraph\\s+${escapeRegExp(subgraphId)}\b`).test(line));
+      if (start === -1) return current;
+
+      const result: string[] = [];
+      let depth = 0;
+      for (let index = 0; index < lines.length; index += 1) {
+        const line = lines[index];
+        if (index === start) {
+          depth = 1;
+          continue;
+        }
+        if (depth > 0) {
+          if (/^\s*subgraph\b/.test(line)) {
+            depth += 1;
+            result.push(line.replace(/^\s{2}/, ''));
+            continue;
+          }
+          if (/^\s*end\s*$/.test(line)) {
+            depth -= 1;
+            if (depth === 0) {
+              continue;
+            }
+          }
+          result.push(line.replace(/^\s{2}/, ''));
+          continue;
+        }
+        result.push(line);
       }
-      return serialize(parsed);
+      return result.join('\n');
     });
   }
 }

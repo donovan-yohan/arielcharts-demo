@@ -58,11 +58,16 @@ button { cursor: pointer; }
 .canvas-transform { position: absolute; inset: 0 auto auto 0; transform-origin: 0 0; }
 .svg-stage svg { overflow: visible; }
 .overlay-stage { position: absolute; inset: 0; }
+.rubber-band { position: absolute; inset: 0; overflow: visible; pointer-events: none; }
+.rubber-band line { stroke: var(--accent); stroke-width: 2; stroke-dasharray: 8 6; }
 .node-overlay {
   position: absolute; background: transparent; border: 2px solid transparent; border-radius: 12px;
 }
 .node-overlay.selected { border-color: var(--accent); box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.22); }
 .node-overlay.connect-source { border-style: dashed; }
+.connection-port {
+  position: absolute; top: 50%; right: -5px; width: 10px; height: 10px; border-radius: 50%; background: var(--accent); transform: translateY(-50%);
+}
 .context-toolbar {
   position: absolute; transform: translate(-50%, -100%); display: inline-flex; gap: 6px; padding: 4px 6px; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 12px 32px rgba(2, 6, 23, 0.45);
 }
@@ -72,6 +77,12 @@ button { cursor: pointer; }
 .toolbar-btn:hover { background: var(--border); color: var(--text); }
 .shape-picker {
   position: absolute; top: calc(100% + 8px); left: 0; width: 180px; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 8px; background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
+}
+.arrow-select { position: relative; }
+.arrow-toggle { width: auto; padding: 0 6px; gap: 4px; }
+.arrow-token { font-size: 10px; color: var(--code); }
+.arrow-picker {
+  position: absolute; top: calc(100% + 8px); left: 0; width: 110px; display: grid; gap: 6px; padding: 8px; background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
 }
 .shape-option {
   background: transparent; color: var(--muted); border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px; text-transform: capitalize;

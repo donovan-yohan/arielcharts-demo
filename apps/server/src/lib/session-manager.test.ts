@@ -17,20 +17,21 @@ describe('SessionManager', () => {
     const session = manager.getOrCreateSession('sample_1');
 
     expect(session.text.toString()).toContain('flowchart TD');
-    expect(manager.listSessions()).toEqual([
-      expect.objectContaining({ id: 'sample_1' }),
-    ]);
+    expect(fs.existsSync(databasePath)).toBe(true);
+    expect(manager.listSessions()).toEqual([expect.objectContaining({ id: 'sample_1' })]);
   });
 
-  it('writes diagrams through MCP-facing API', () => {
-    const manager = new SessionManager(new Persistence(databasePath), 60_000);
+  it('writes diagrams through MCP-facing API and persists Yjs-backed state', () => {
+    const persistence = new Persistence(databasePath);
+    const manager = new SessionManager(persistence, 60_000);
     manager.writeDiagram('sample_1', 'flowchart TD\n  a[Alpha] --> b[Beta]', {
       name: 'Agent',
       color: '#3fb950',
       type: 'agent',
     });
 
-    expect(manager.readDiagram('sample_1').mermaid_text).toContain('Alpha');
-    expect(manager.getActivity('sample_1').at(-1)?.action).toBe('replaced');
+    const reloaded = new SessionManager(new Persistence(databasePath), 60_000);
+    expect(reloaded.readDiagram('sample_1').mermaid_text).toContain('Alpha');
+    expect(reloaded.getActivity('sample_1').at(-1)?.action).toBe('replaced');
   });
 });

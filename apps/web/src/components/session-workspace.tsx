@@ -9,10 +9,10 @@ import { EditorState } from '@codemirror/state';
 import { EditorView, keymap, lineNumbers } from '@codemirror/view';
 import { markdown } from '@codemirror/lang-markdown';
 import { yCollab } from 'y-codemirror.next';
-import { Copy, Share2, Sparkles, UserRoundPen } from 'lucide-react';
+import { Copy, Share2, Sparkles } from 'lucide-react';
 import { DEFAULT_DIAGRAM, type ActivityEvent, type Participant } from '@arielcharts/shared';
 import { DiagramCanvas } from '@/components/diagram-canvas';
-import { MutationQueue, parseDiagram, type NodeShape } from '@/lib/diagram-mutations';
+import { MutationQueue, parseDiagram, type EdgeArrowType, type NodeShape } from '@/lib/diagram-mutations';
 
 mermaid.initialize({ startOnLoad: false, theme: 'dark', securityLevel: 'loose' });
 
@@ -51,7 +51,6 @@ export function SessionWorkspace({ sessionId }: { sessionId: string }) {
   const editorViewRef = useRef<EditorView | null>(null);
   const providerRef = useRef<WebsocketProvider | null>(null);
   const awarenessRef = useRef<Awareness | null>(null);
-  const docRef = useRef<Y.Doc | null>(null);
   const textRef = useRef<Y.Text | null>(null);
   const mutationQueueRef = useRef<MutationQueue | null>(null);
   const [participant, setParticipant] = useState<Participant>({ name: 'You', color: '#58a6ff', type: 'human' });
@@ -63,14 +62,25 @@ export function SessionWorkspace({ sessionId }: { sessionId: string }) {
   const [selectedNodeIds, setSelectedNodeIds] = useState<string[]>([]);
   const [editingNodeId, setEditingNodeId] = useState<string | undefined>();
   const [connectSourceId, setConnectSourceId] = useState<string | undefined>();
+  const [connectArrowType, setConnectArrowType] = useState<EdgeArrowType>('-->');
   const [connectModalOpen, setConnectModalOpen] = useState(false);
   const [renameOpen, setRenameOpen] = useState(false);
   const [invalidMessage, setInvalidMessage] = useState<string | undefined>();
 
   const parsed = useMemo(() => parseDiagram(mermaidText), [mermaidText]);
+  const selectedNodeId = selectedNodeIds[0];
 
   const appendActivity = useCallback((event: ActivityEvent) => {
     setActivity((current) => [...current.slice(-39), event]);
+  }, []);
+
+  const syncParticipants = useCallback((awareness: Awareness) => {
+    setParticipants(
+      Array.from(awareness.getStates().entries())
+        .filter(([clientId]) => clientId !== awareness.clientID)
+        .map(([, state]) => (state as { user?: Participant }).user)
+        .filter(Boolean) as Participant[],
+    );
   }, []);
 
   useEffect(() => {
@@ -79,7 +89,6 @@ export function SessionWorkspace({ sessionId }: { sessionId: string }) {
 
     const doc = new Y.Doc();
     const text = doc.getText('mermaid');
-    docRef.current = doc;
     textRef.current = text;
     mutationQueueRef.current = new MutationQueue(text);
 
@@ -88,6 +97,8 @@ export function SessionWorkspace({ sessionId }: { sessionId: string }) {
       connect: true,
       params: {
         userName: nextParticipant.name,
+        userType: nextParticipant.type,
+        userColor: nextParticipant.color,
       },
     });
 
@@ -96,19 +107,11 @@ export function SessionWorkspace({ sessionId }: { sessionId: string }) {
     provider.awareness.setLocalStateField('user', nextParticipant);
 
     provider.on('status', () => {
-      setParticipants(
-        Array.from(provider.awareness.getStates().values())
-          .map((state) => (state as { user?: Participant }).user)
-          .filter(Boolean) as Participant[],
-      );
+      syncParticipants(provider.awareness);
     });
 
     provider.awareness.on('change', () => {
-      setParticipants(
-        Array.from(provider.awareness.getStates().values())
-          .map((state) => (state as { user?: Participant }).user)
-          .filter(Boolean) as Participant[],
-      );
+      syncParticipants(provider.awareness);
     });
 
     text.observe(() => setMermaidText(text.toString()));
@@ -132,7 +135,7 @@ export function SessionWorkspace({ sessionId }: { sessionId: string }) {
       provider.destroy();
       doc.destroy();
     };
-  }, [sessionId]);
+  }, [sessionId, syncParticipants]);
 
   useEffect(() => {
     if (!editorHostRef.current || !textRef.current || !awarenessRef.current || editorViewRef.current) {
@@ -198,7 +201,9 @@ export function SessionWorkspace({ sessionId }: { sessionId: string }) {
     );
   }, [sessionId]);
 
-  const selectedNodeId = selectedNodeIds[0];
+  const copySessionId = useCallback(async () => {
+    await navigator.clipboard.writeText(sessionId);
+  }, [sessionId]);
 
   async function mutate(action: string, run: () => Promise<void>) {
     await run();
@@ -221,17 +226,17 @@ export function SessionWorkspace({ sessionId }: { sessionId: string }) {
           </button>
           <div className="session-chip">
             <span className="session-id">{sessionId}</span>
-            <button type="button" className="copy-btn" onClick={() => navigator.clipboard.writeText(window.location.href)}>
+            <button type="button" className="copy-btn" onClick={copySessionId} aria-label="Copy session ID">
               <Copy size={12} />
             </button>
           </div>
         </div>
         <div className="topbar-right">
           <div className="presence-stack">
-            {[participant, ...participants.filter((entry) => entry.name !== participant.name)].map((entry, index) => (
+            {[participant, ...participants].map((entry, index) => (
               <button
                 type="button"
-                key={`${entry.name}-${index}`}
+                key={`${entry.name}-${entry.color}-${index}`}
                 className={`avatar ${entry.type}`}
                 style={{ backgroundColor: entry.type === 'human' ? entry.color : 'transparent', color: entry.type === 'human' ? '#fff' : '#3fb950' }}
                 onClick={() => {
@@ -280,11 +285,7 @@ export function SessionWorkspace({ sessionId }: { sessionId: string }) {
           </div>
           {parsed.kind === 'empty' ? (
             <div className="empty-state">
-              <button
-                type="button"
-                className="connect-btn"
-                onClick={() => mutationQueueRef.current?.addNode()}
-              >
+              <button type="button" className="connect-btn" onClick={() => mutationQueueRef.current?.addNode()}>
                 Add your first node
               </button>
             </div>
@@ -295,8 +296,14 @@ export function SessionWorkspace({ sessionId }: { sessionId: string }) {
               selectedNodeIds={selectedNodeIds}
               selectedNodeId={selectedNodeId}
               connectSourceId={connectSourceId}
+              connectArrowType={connectArrowType}
               editingNodeId={editingNodeId}
               invalidMessage={invalidMessage}
+              onDeselect={() => {
+                setSelectedNodeIds([]);
+                setEditingNodeId(undefined);
+                setConnectSourceId(undefined);
+              }}
               onSelectNode={(nodeId, append) => {
                 setEditingNodeId(undefined);
                 setSelectedNodeIds((current) => (append ? [...new Set([...current, nodeId])] : [nodeId]));
@@ -329,10 +336,15 @@ export function SessionWorkspace({ sessionId }: { sessionId: string }) {
               onToggleConnect={() => {
                 setConnectSourceId((current) => (current ? undefined : selectedNodeId));
               }}
+              onChangeArrowType={setConnectArrowType}
               onConnectTarget={(targetNodeId) => {
                 if (!connectSourceId) return;
+                const label = window.prompt('Edge label (optional)', '') ?? '';
                 setConnectSourceId(undefined);
-                void mutate(`Connected ${connectSourceId} → ${targetNodeId}`, async () => mutationQueueRef.current?.addEdge(connectSourceId, targetNodeId) ?? Promise.resolve());
+                void mutate(
+                  `Connected ${connectSourceId} ${connectArrowType} ${targetNodeId}${label.trim() ? ` (${label.trim()})` : ''}`,
+                  async () => mutationQueueRef.current?.addEdge(connectSourceId, targetNodeId, label.trim() || undefined, connectArrowType) ?? Promise.resolve(),
+                );
               }}
               onFit={() => {
                 setSelectedNodeIds([]);

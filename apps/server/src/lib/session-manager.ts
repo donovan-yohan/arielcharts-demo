@@ -9,7 +9,7 @@ import {
   type Participant,
   type SessionSnapshot,
 } from '@arielcharts/shared';
-import { Persistence } from './persistence';
+import { Persistence, type PersistedSessionRecord } from './persistence';
 
 interface ManagedSession {
   id: string;
@@ -29,8 +29,8 @@ export class SessionManager {
     private readonly persistence: Persistence,
     private readonly sessionTtlMs: number,
   ) {
-    for (const snapshot of persistence.loadAllSessions()) {
-      this.sessions.set(snapshot.id, this.createSession(snapshot));
+    for (const record of persistence.loadAllSessions()) {
+      this.sessions.set(record.snapshot.id, this.createSession(record));
     }
   }
 
@@ -45,12 +45,15 @@ export class SessionManager {
     }
 
     const created = this.createSession({
-      id,
-      mermaidText: DEFAULT_DIAGRAM,
-      updatedAt: Date.now(),
-      title: 'Untitled flowchart',
-      participants: [],
-      activity: [],
+      snapshot: {
+        id,
+        mermaidText: DEFAULT_DIAGRAM,
+        updatedAt: Date.now(),
+        title: 'Untitled flowchart',
+        participants: [],
+        activity: [],
+      },
+      ydocState: new Uint8Array(),
     });
     this.sessions.set(id, created);
     this.persist(created);
@@ -107,6 +110,10 @@ export class SessionManager {
     return this.getOrCreateSession(id).activity;
   }
 
+  getParticipant(id: string, clientId: number) {
+    return this.getOrCreateSession(id).participants.get(clientId) ?? null;
+  }
+
   touchParticipant(id: string, clientId: number, participant: Participant | null) {
     const session = this.getOrCreateSession(id);
     if (participant) {
@@ -128,10 +135,18 @@ export class SessionManager {
     }
   }
 
-  private createSession(snapshot: SessionSnapshot): ManagedSession {
+  private createSession(record: PersistedSessionRecord): ManagedSession {
+    const { snapshot, ydocState } = record;
     const doc = new Y.Doc();
+    if (ydocState.length > 0) {
+      Y.applyUpdate(doc, ydocState);
+    }
+
     const text = doc.getText('mermaid');
-    text.insert(0, snapshot.mermaidText || DEFAULT_DIAGRAM);
+    if (text.length === 0) {
+      text.insert(0, snapshot.mermaidText || DEFAULT_DIAGRAM);
+    }
+
     const awareness = new Awareness(doc);
     const session: ManagedSession = {
       id: snapshot.id,
@@ -159,14 +174,17 @@ export class SessionManager {
   }
 
   private persist(session: ManagedSession) {
-    this.persistence.saveSession({
-      id: session.id,
-      mermaidText: session.text.toString(),
-      updatedAt: session.updatedAt,
-      title: session.title,
-      participants: [...session.participants.values()],
-      activity: session.activity,
-    });
+    this.persistence.saveSession(
+      {
+        id: session.id,
+        mermaidText: session.text.toString(),
+        updatedAt: session.updatedAt,
+        title: session.title,
+        participants: [...session.participants.values()],
+        activity: session.activity,
+      },
+      Y.encodeStateAsUpdate(session.doc),
+    );
   }
 }
 
