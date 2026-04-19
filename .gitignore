@@ -3,7 +3,6 @@ dist/
 .next/
 *.db
 *.db-journal
+.env.local
 .pnpm-store/
 .npmrc
-*.db
-*.db-journal
